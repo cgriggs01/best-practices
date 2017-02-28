@@ -26,7 +26,7 @@ preparepolicy() {
   FILEPATH=$1
   PARAMETER=$2
 
-  sed -i -- 's/\"/\\"/g' $FILEPATH
+  sed -i -- 's//\/g' $FILEPATH
   sed -i '1s/^/{"{{ parameter }}": "/' $FILEPATH
   sed -i '$s|$|"}|' $FILEPATH
   sed -i -- "s/{{ parameter }}/$PARAMETER/g" $FILEPATH
@@ -59,11 +59,11 @@ logger "Checking for Vault token..."
 
 if [[ "x${vault_token}" == "x" || "${vault_token}" == "REPLACE_IN_ATLAS" ]]; then
   logger "Setting consul_template retry to 1h and stopping service."
-  sed -i -- "s/retry     = \"5s\"/retry     = \"1h\"/g" /etc/consul_template.d/base.hcl
+  sed -i -- "s/retry     = 5s/retry     = 1h/g" /etc/consul_template.d/base.hcl
   service consul_template stop
 
   logger "Setting envconsul retry to 1h."
-  sed -i -- "s/retry       = \"5s\"/retry       = \"1h\"/g" /etc/envconsul.d/base.hcl
+  sed -i -- "s/retry       = 5s/retry       = 1h/g" /etc/envconsul.d/base.hcl
   service nodejs restart
 
   logger "Exiting without setting Vault policy due to no Vault token."
@@ -76,7 +76,7 @@ logger "Waiting for Vault to become ready..."
 SLEEPTIME=1
 cget() { curl -sf "$VAULT/v1/sys/health?standbyok"; }
 
-while ! cget | grep "\"initialized\":true,\"sealed\":false"; do
+while ! cget | grep "initialized:true,sealed:false"; do
   if [ $SLEEPTIME -gt 15 ]; then
     logger "ERROR: VAULT SETUP NOT COMPLETE! Manual intervention required."
     exit 2
@@ -124,7 +124,7 @@ TOKEN=$(
     -LX POST \
     -d @/tmp/$NODEJSPOLICYNAME-token.json \
     $VAULT/v1/auth/token/create \
-    | grep -Po '"client_token":.*?[^\\]",' | awk -F\" '{print $4}'
+    | grep -Po '"client_token":.*?[^\\]",' | awk -F '{print $4}'
 )
 
 rm -rf /tmp/$NODEJSPOLICYNAME-token.json
@@ -149,7 +149,7 @@ logger $(
     -H "X-Vault-Token: ${vault_token}" \
     -H "Content-Type: application/json" \
     -LX POST \
-    -d "{\"$GENERICSECRETKEY\": \"$GENERICSECRET\", \"ttl\": \"1m\"}" \
+    -d "{$GENERICSECRETKEY: $GENERICSECRET, ttl: 1m}" \
     $VAULT/v1/$GENERICSECRETPATH
 )
 
@@ -186,7 +186,7 @@ if [ $AWSMOUNTED -eq 0 ]; then
       -H "X-Vault-Token: ${vault_token}" \
       -H "Content-Type: application/json" \
       -LX POST \
-      -d "{\"type\":\"aws\", \"description\":\"dynamic aws iam credentials\"}" \
+      -d "{type:aws, description:dynamic aws iam credentials}" \
       $VAULT/v1/sys/mounts/aws
   )
 
@@ -202,7 +202,7 @@ logger $(
   -H "X-Vault-Token: ${vault_token}" \
   -H "Content-Type: application/json" \
   -LX POST \
-  -d "{\"access_key\":\"${aws_access_id}\", \"secret_key\":\"${aws_secret_key}\", \"region\":\"${aws_region}\"}" \
+  -d "{access_key:${aws_access_id}, secret_key:${aws_secret_key}, region:${aws_region}}" \
   $VAULT/v1/aws/config/root
 )
 
@@ -213,7 +213,7 @@ logger $(
   -H "X-Vault-Token: ${vault_token}" \
   -H "Content-Type: application/json" \
   -LX POST \
-  -d "{\"lease\": \"1m\", \"lease_max\": \"2m\"}" \
+  -d "{lease: 1m, lease_max: 2m}" \
   $VAULT/v1/aws/config/lease
 )
 
