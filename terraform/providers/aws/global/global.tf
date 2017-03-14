@@ -1,10 +1,10 @@
-variable "domain"            {somedomain.web}
-variable "atlas_username"    {se-cgriggs}
-variable "atlas_environment" {aws_global_test}
-variable "name"              {aws_global}
-variable "region"            {us-east-1}
-variable "iam_admins"        {chris}
-variable "iam_vault_envs"    { }
+variable "domain"            {}
+variable "atlas_username"    {}
+variable "atlas_environment" {}
+variable "name"              {}
+variable "region"            {}
+variable "iam_admins"        {}
+variable "iam_vault_envs"    {}
 
 provider "aws" {
   region = "${var.region}"
